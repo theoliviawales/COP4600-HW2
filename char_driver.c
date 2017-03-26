@@ -4,6 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/fs.h>
+#include <linux/slab.h>
 #include <asm/uaccess.h>
 #define DEVICE_NAME "fjr"
 
@@ -40,7 +41,7 @@ static struct file_operations fops =
 
 charq *make_c(char c)
 {
-    charq *node = malloc(sizeof(charq));
+    charq *node = kmalloc(sizeof(charq), GFP_KERNEL);
     node->c = c;
     node->next = NULL;
     
@@ -50,10 +51,10 @@ charq *make_c(char c)
 charq *freeq(charq *node)
 {
     if (node == NULL)
-        return;
+        return NULL;
     
     freeq(node->next);
-    free(node);
+    kfree(node);
     
     return NULL;
 }
@@ -65,11 +66,11 @@ int init_module(void)
     
     if (major_number < 0)
     {
-        printf(KERN_ALERT "FJR could not register a major number :(\n");
+        printk(KERN_ALERT "FJR could not register a major number :(\n");
         return major_number;
     }
     
-    printf(KERN_INFO "FJR: assigned major number %d\n", major_number);
+    printk(KERN_INFO "FJR: assigned major number %d\n", major_number);
     
     return 0;
 }
@@ -89,16 +90,17 @@ static int dev_open(struct inode *inod, struct file *fil)
 static ssize_t dev_read(struct file *filp, char *buff, size_t len, loff_t *off)
 {
     int count = 0;
-    
+    charq *temp;
+
     while (head != NULL)
     {
         put_user(head->c, buff++);
 
-        charq *temp = head;
+        temp = head;
         count++;
         head = head->next;
         
-        free(temp);
+        kfree(temp);
     }
 
     return count;
