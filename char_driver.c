@@ -96,9 +96,7 @@ static ssize_t dev_read(struct file *filp, char *buff, size_t len, loff_t *off)
     charq *temp;
 
     printk(KERN_ALERT "FJR read from\n");
-
-    if (len > letters_available)
-        printk(KERN_ALERT "FJR: Only %d bytes available\n", letters_available);        
+    printk(KERN_ALERT "FJR: %d bytes available to read\n", letters_available);        
 
     while (head != NULL)
     {
@@ -121,6 +119,7 @@ static ssize_t dev_write(struct file *filp, const char *buff, size_t len, loff_t
     int i = 0;
 
     printk(KERN_ALERT "FJR written to\n");
+    printk(KERN_ALERT "FJR: %d bytes available to write\n", letters_available);        
     
     while (last_node != NULL && last_node->next != NULL)
     {
