@@ -119,7 +119,7 @@ static ssize_t dev_write(struct file *filp, const char *buff, size_t len, loff_t
     int i = 0;
 
     printk(KERN_ALERT "FJR written to\n");
-    printk(KERN_ALERT "FJR: %d bytes available to write\n", letters_available);        
+    printk(KERN_ALERT "FJR: %d bytes available to write\n", BUFFER_SIZE - letters_available);        
     
     while (last_node != NULL && last_node->next != NULL)
     {
