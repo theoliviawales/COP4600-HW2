@@ -7,6 +7,7 @@
 #include <linux/slab.h>
 #include <asm/uaccess.h>
 #define DEVICE_NAME "fjr"
+#define BUFFER_SIZE 1024
 
 // Kernel driver info things
 MODULE_LICENSE("GPL");
@@ -25,6 +26,7 @@ static int major_number;
 
 // Head of the character queue to be printed in FIFO order
 charq *head = NULL;
+int letters_available = 0;
 
 static int dev_open(struct inode *, struct file *);
 static int dev_rls(struct inode *, struct file *);
@@ -63,6 +65,7 @@ int init_module(void)
 {
     // register_chrdev returns a major number when 0 is passed to it
     major_number = register_chrdev(0, DEVICE_NAME, &fops);
+    letters_available = 0;
     
     if (major_number < 0)
     {
@@ -92,6 +95,11 @@ static ssize_t dev_read(struct file *filp, char *buff, size_t len, loff_t *off)
     int count = 0;
     charq *temp;
 
+    printk(KERN_ALERT "FJR read from\n");
+
+    if (len > letters_available)
+        printk(KERN_ALERT "FJR: Only %d bytes available\n", letters_available);        
+
     while (head != NULL)
     {
         put_user(head->c, buff++);
@@ -101,6 +109,7 @@ static ssize_t dev_read(struct file *filp, char *buff, size_t len, loff_t *off)
         head = head->next;
         
         kfree(temp);
+        letters_available--;
     }
 
     return count;
@@ -110,13 +119,15 @@ static ssize_t dev_write(struct file *filp, const char *buff, size_t len, loff_t
 {
     charq *last_node = head;
     int i = 0;
+
+    printk(KERN_ALERT "FJR written to\n");
     
     while (last_node != NULL && last_node->next != NULL)
     {
         last_node = last_node->next;
     }
     
-    while (i < len)
+    while (i < len && letters_available < BUFFER_SIZE)
     {
         charq *new_node = make_c(buff[i]);
         if (head == NULL)
@@ -132,6 +143,7 @@ static ssize_t dev_write(struct file *filp, const char *buff, size_t len, loff_t
             
         
         i++;
+        letters_available++;
     }
     
     return i;
